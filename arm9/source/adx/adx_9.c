@@ -1,7 +1,8 @@
 // libadx-nds library
 // by headshot2017 (Headshotnoby)
 // LibADX Dreamcast library (c)2012 Josh PH3NOM Pearson
-// Built on top of NDS Helix-MP3 decoder code by sverx (https://adshomebrewersdiary.blogspot.com/2012/06/mp3-streaming-on-arm7.html)
+//   Built on top of NDS Helix-MP3 decoder code by sverx (https://adshomebrewersdiary.blogspot.com/2012/06/mp3-streaming-on-arm7.html)
+//   which is a fixed version of hacker013's original code (https://gbadev.net/forum-archive/thread/23/17859.html)
 
 #include <stdlib.h>
 #include <string.h>
