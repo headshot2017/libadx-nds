@@ -4,9 +4,9 @@ ADX decoder/player for Nintendo DS homebrew, written using [BlocksDS](https://gi
 
 ## Information
 
-When playing an ADX file, it is decoded on the ARM7, allowing you to run game logic on the ARM9 uninterrupted.
+When playing an ADX file, it is decoded on the ARM7, allowing to run game logic on the ARM9 uninterrupted.
 
-The ADX quality can go up to 48000 Hz 128 kbps, with no lag.<br/>
+The ADX quality has been tested up to 48000 Hz 128 kbps, with no lag.<br/>
 Higher kbps quality may be possible, but it has not been tested.
 
 ## Credits
