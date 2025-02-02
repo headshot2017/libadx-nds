@@ -11,4 +11,4 @@ Higher kbps quality may be possible, but it has not been tested.
 
 ## Credits
 * LibADX Dreamcast library (c)2011-2013 Josh PH3NOM Pearson
-* Built on top of [NDS Helix-MP3 decoder](https://adshomebrewersdiary.blogspot.com/2012/06/mp3-streaming-on-arm7.html) code by sverx
+* Built on top of [NDS Helix-MP3 decoder](https://adshomebrewersdiary.blogspot.com/2012/06/mp3-streaming-on-arm7.html) code by sverx, which is a fixed version of [hacker013's original code](https://gbadev.net/forum-archive/thread/23/17859.html)
