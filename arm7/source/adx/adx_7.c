@@ -171,7 +171,7 @@ static void adx_frames(DSTIME endtime, u8 firstFrames)
 {
 	while (paintedtime < endtime)
 	{
-		if (firstFrames && adx->flag == 1)
+		if (adx->flag == 1)
 			break;
 
 		adx_frame();
