@@ -1,16 +1,14 @@
 // libadx-nds library
 // by headshot2017 (Headshotnoby)
 // LibADX Dreamcast library (c)2012 Josh PH3NOM Pearson
-//   Built on top of NDS Helix-MP3 decoder code by sverx (https://adshomebrewersdiary.blogspot.com/2012/06/mp3-streaming-on-arm7.html)
-//   which is a fixed version of hacker013's original code (https://gbadev.net/forum-archive/thread/23/17859.html)
+// Built on top of NDS Helix-MP3 decoder code by sverx (https://adshomebrewersdiary.blogspot.com/2012/06/mp3-streaming-on-arm7.html)
+// which is a fixed version of hacker013's original code (https://gbadev.net/forum-archive/thread/23/17859.html)
 
 #include <nds.h>
 #include <stdio.h>
 #include <string.h>
 #include <malloc.h>
 #include "libadx.h"
-
-int getFreeChannel();
 
 volatile adx_player *adx;
 volatile adx_player_state adx_state;
@@ -23,6 +21,16 @@ static u8* adx_readPtr;
 static DSTIME ds_sound_start;
 static DSTIME soundtime;
 static DSTIME paintedtime;
+
+
+static int GetChannel()
+{
+	for (int i=0; i<16; i++)
+	{
+		if (!(REG_SOUNDXCNT(i) & SOUNDXCNT_ENABLE))
+			return i;
+	}
+}
 
 
 /* Convert ADX samples to PCM samples */
@@ -172,7 +180,7 @@ static void adx_frames(DSTIME endtime, u8 firstFrames)
 {
 	while (paintedtime < endtime)
 	{
-		if (adx->flag == 1)
+		if (firstFrames && adx->flag == 1)
 			break;
 
 		adx_frame();
@@ -184,6 +192,8 @@ static void adx_frames(DSTIME endtime, u8 firstFrames)
 		{
 			adx_readPtr -= ADX_FILE_BUFFER_SIZE;
 			memcpy((void *)adx_readPtr, (void *)(adx_readPtr + ADX_FILE_BUFFER_SIZE), ADX_FILE_BUFFER_SIZE - (adx_readPtr-adx->buffer));
+			if (adx->flag == 1)
+				break;
 			adx->flag = 1;
 		}
 	}
@@ -213,8 +223,8 @@ static void adx_pause()
 
 	adx->flag = 0;
 	ds_set_timer(0);
-	SCHANNEL_CR(adx_channelLeft) = 0;
-	SCHANNEL_CR(adx_channelRight) = 0;
+	REG_SOUNDXCNT(adx_channelLeft) = 0;
+	REG_SOUNDXCNT(adx_channelRight) = 0;
 	adx_channelLeft = -1;
 	adx_state = ADX_PAUSED;
 }
@@ -231,33 +241,33 @@ static int adx_resume()
 	memset((void *)adx->audioRight, 0, ADX_AUDIO_BUFFER_SIZE);
 	adx_frames(ADX_AUDIO_BUFFER_SAMPS>>1, 1);
 
-	adx_channelLeft = getFreeChannel();
+	adx_channelLeft = GetChannel();
 
-	SCHANNEL_SOURCE(adx_channelLeft) = (u32)adx->audioLeft;
-	SCHANNEL_REPEAT_POINT(adx_channelLeft) = 0;
-	SCHANNEL_LENGTH(adx_channelLeft) = (ADX_AUDIO_BUFFER_SIZE)>>2;
-	SCHANNEL_TIMER(adx_channelLeft) = 0x10000 - (0x1000000 / adx->ADX_Info.rate);
+	REG_SOUNDXSAD(adx_channelLeft) = (u32)adx->audioLeft;
+	REG_SOUNDXPNT(adx_channelLeft) = 0;
+	REG_SOUNDXLEN(adx_channelLeft) = (ADX_AUDIO_BUFFER_SIZE)>>2;
+	REG_SOUNDXTMR(adx_channelLeft) = 0x10000 - (0x1000000 / adx->ADX_Info.rate);
 
 	if (adx->ADX_Info.channels == 1)
 	{
 		// Mono
-		SCHANNEL_CR(adx_channelLeft) = SCHANNEL_ENABLE | SOUND_VOL(adx_volume) | SOUND_PAN(64) | (SOUND_FORMAT_16BIT) | (SOUND_REPEAT);
+		REG_SOUNDXCNT(adx_channelLeft) = SOUNDXCNT_ENABLE | SOUNDCNT_VOL(adx_volume) | SOUNDXCNT_PAN(64) | (SOUNDXCNT_FORMAT_16BIT) | (SOUNDXCNT_REPEAT);
 	}
 	else
 	{
 		// Stereo
-		// "lock" (silent) this channel, so that next getFreeChannel call gives a different one...
-		SCHANNEL_CR(adx_channelLeft) = SCHANNEL_ENABLE | SOUND_VOL(0) | SOUND_PAN(0) | (SOUND_FORMAT_16BIT) | (SOUND_REPEAT);
-		adx_channelRight = getFreeChannel();
-		SCHANNEL_CR(adx_channelLeft) = 0;
+		// "lock" (silent) this channel, so that next GetChannel() call gives a different one...
+		REG_SOUNDXCNT(adx_channelLeft) = SOUNDXCNT_ENABLE | SOUNDCNT_VOL(0) | SOUNDXCNT_PAN(0) | (SOUNDXCNT_FORMAT_16BIT) | (SOUNDXCNT_REPEAT);
+		adx_channelRight = GetChannel();
+		REG_SOUNDXCNT(adx_channelLeft) = 0;
 
-		SCHANNEL_SOURCE(adx_channelRight) = (u32)adx->audioRight;
-		SCHANNEL_REPEAT_POINT(adx_channelRight) = 0;
-		SCHANNEL_LENGTH(adx_channelRight) = (ADX_AUDIO_BUFFER_SIZE)>>2;
-		SCHANNEL_TIMER(adx_channelRight) = 0x10000 - (0x1000000 / adx->ADX_Info.rate);
+		REG_SOUNDXSAD(adx_channelRight) = (u32)adx->audioRight;
+		REG_SOUNDXPNT(adx_channelRight) = 0;
+		REG_SOUNDXLEN(adx_channelRight) = (ADX_AUDIO_BUFFER_SIZE)>>2;
+		REG_SOUNDXTMR(adx_channelRight) = 0x10000 - (0x1000000 / adx->ADX_Info.rate);
 
-		SCHANNEL_CR(adx_channelLeft) = SCHANNEL_ENABLE | SOUND_VOL(adx_volume) | SOUND_PAN(0) | (SOUND_FORMAT_16BIT) | (SOUND_REPEAT);
-		SCHANNEL_CR(adx_channelRight) = SCHANNEL_ENABLE | SOUND_VOL(adx_volume) | SOUND_PAN(127) | (SOUND_FORMAT_16BIT) | (SOUND_REPEAT);
+		REG_SOUNDXCNT(adx_channelLeft) = SOUNDXCNT_ENABLE | SOUNDCNT_VOL(adx_volume) | SOUNDXCNT_PAN(0) | (SOUNDXCNT_FORMAT_16BIT) | (SOUNDXCNT_REPEAT);
+		REG_SOUNDXCNT(adx_channelRight) = SOUNDXCNT_ENABLE | SOUNDCNT_VOL(adx_volume) | SOUNDXCNT_PAN(127) | (SOUNDXCNT_FORMAT_16BIT) | (SOUNDXCNT_REPEAT);
 	}
 
 	ds_set_timer(adx->ADX_Info.rate);
@@ -273,12 +283,12 @@ void adx_stop()
 	adx = 0;
 
 	ds_set_timer(0);
-	SCHANNEL_CR(adx_channelLeft) = 0;
-	SCHANNEL_CR(adx_channelRight) = 0;
-	//free((void *)&SCHANNEL_SOURCE(adx_channelLeft));
-	//free((void *)&SCHANNEL_SOURCE(adx_channelRight));
-	SCHANNEL_SOURCE(adx_channelLeft) = 0;
-	SCHANNEL_SOURCE(adx_channelRight) = 0;
+	REG_SOUNDXCNT(adx_channelLeft) = 0;
+	REG_SOUNDXCNT(adx_channelRight) = 0;
+	//free((void *)&REG_SOUNDXSAD(adx_channelLeft));
+	//free((void *)&REG_SOUNDXSAD(adx_channelRight));
+	REG_SOUNDXSAD(adx_channelLeft) = 0;
+	REG_SOUNDXSAD(adx_channelRight) = 0;
 	adx_channelLeft = -1;
 	adx_state = ADX_IDLE;
 }
@@ -364,9 +374,9 @@ static void adx_set_volume(int volume)
 		return;
 	}
 
-	SCHANNEL_CR(adx_channelLeft) = (SCHANNEL_CR(adx_channelLeft) & ~0xFF) | volume;
+	REG_SOUNDXCNT(adx_channelLeft) = (REG_SOUNDXCNT(adx_channelLeft) & ~0xFF) | volume;
 	if (adx->ADX_Info.channels == 2)
-		SCHANNEL_CR(adx_channelRight) = (SCHANNEL_CR(adx_channelRight) & ~0xFF) | volume;
+		REG_SOUNDXCNT(adx_channelRight) = (REG_SOUNDXCNT(adx_channelRight) & ~0xFF) | volume;
 
 	fifoSendValue32(FIFO_USER_01, 1);
 }
