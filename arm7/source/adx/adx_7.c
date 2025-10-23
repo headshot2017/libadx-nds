@@ -23,16 +23,6 @@ static DSTIME soundtime;
 static DSTIME paintedtime;
 
 
-static int GetChannel()
-{
-	for (int i=0; i<16; i++)
-	{
-		if (!(REG_SOUNDXCNT(i) & SOUNDXCNT_ENABLE))
-			return i;
-	}
-}
-
-
 /* Convert ADX samples to PCM samples */
 static void adx_to_pcm(short *out,unsigned char *in,PREV *prev)
 {
@@ -241,7 +231,8 @@ static int adx_resume()
 	memset((void *)adx->audioRight, 0, ADX_AUDIO_BUFFER_SIZE);
 	adx_frames(ADX_AUDIO_BUFFER_SAMPS>>1, 1);
 
-	adx_channelLeft = GetChannel();
+	adx_channelLeft = 14;
+	adx_channelRight = 15;
 
 	REG_SOUNDXSAD(adx_channelLeft) = (u32)adx->audioLeft;
 	REG_SOUNDXPNT(adx_channelLeft) = 0;
@@ -256,11 +247,6 @@ static int adx_resume()
 	else
 	{
 		// Stereo
-		// "lock" (silent) this channel, so that next GetChannel() call gives a different one...
-		REG_SOUNDXCNT(adx_channelLeft) = SOUNDXCNT_ENABLE | SOUNDCNT_VOL(0) | SOUNDXCNT_PAN(0) | (SOUNDXCNT_FORMAT_16BIT) | (SOUNDXCNT_REPEAT);
-		adx_channelRight = GetChannel();
-		REG_SOUNDXCNT(adx_channelLeft) = 0;
-
 		REG_SOUNDXSAD(adx_channelRight) = (u32)adx->audioRight;
 		REG_SOUNDXPNT(adx_channelRight) = 0;
 		REG_SOUNDXLEN(adx_channelRight) = (ADX_AUDIO_BUFFER_SIZE)>>2;
