@@ -24,7 +24,7 @@ static DSTIME paintedtime;
 
 
 /* Convert ADX samples to PCM samples */
-static void adx_to_pcm(short *out,unsigned char *in,PREV *prev)
+static void adx_to_pcm(short *out, unsigned char *in, volatile PREV *prev)
 {
 	int scale = ((in[0]<<8)|(in[1]));
 	int i;
@@ -182,8 +182,8 @@ static void adx_frames(DSTIME endtime, u8 firstFrames)
 		{
 			adx_readPtr -= ADX_FILE_BUFFER_SIZE;
 			memcpy((void *)adx_readPtr, (void *)(adx_readPtr + ADX_FILE_BUFFER_SIZE), ADX_FILE_BUFFER_SIZE - (adx_readPtr-adx->buffer));
-			if (adx->flag == 1)
-				break;
+//			if (adx->flag == 1)
+//				break;
 			adx->flag = 1;
 		}
 	}
