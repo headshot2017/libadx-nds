@@ -46,7 +46,7 @@ int main(void)
 	}
 
 	printf("Success!\nPlay ADX file...");
-    int err = adx_play("nitro:/test.adx", 1);
+	int err = adx_play("nitro:/test.adx", 1);
 	if(err <= 0)
 	{
 		printf("Failed! %d\nPress any button to exit...\n", err);
@@ -66,13 +66,12 @@ int main(void)
 	bool paused = false;
 
 	while(1) {
-		swiWaitForVBlank();
+		cothread_yield_irq(IRQ_VBLANK);
 		scanKeys();
 
 		int down = keysDown();
 		int held = keysHeld();
 
-		if (!(held & KEY_SELECT)) adx_update();
 		if (held & KEY_UP && vol < 127)
 		{
 			vol++;

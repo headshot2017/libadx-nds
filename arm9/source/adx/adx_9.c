@@ -88,6 +88,17 @@ static void *uncached_malloc(size_t count)
 	return ((p == 0) ? 0 : memUncached(p));
 }
 
+static cothread_t adxThread;
+static int adx_cothread(void* arg)
+{
+	while (1)
+	{
+		adx_update();
+		cothread_yield_irq(IRQ_VBLANK);
+	}
+	return 0;
+}
+
 int adx_init()
 {
 	adx_in = 0;
@@ -102,6 +113,8 @@ int adx_init()
 	memset((void*)adx_buffer, 0, ADX_FILE_BUFFER_SIZE*2);
 	memset((void*)adx_audioLeft, 0, ADX_AUDIO_BUFFER_SIZE);
 	memset((void*)adx_audioRight, 0, ADX_AUDIO_BUFFER_SIZE);
+
+	adxThread = cothread_create(adx_cothread, 0, 1024*4, 0);
 
 	return 1;
 }
